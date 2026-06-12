@@ -234,7 +234,7 @@ type (
 	// ESPN returns this as an object with id, type, and abbreviation fields.
 	SeasonType struct {
 		ID           string `json:"id"`
-		Type         string `json:"type"`
+		Type         int    `json:"type"`
 		Abbreviation string `json:"abbreviation"`
 	}
 
