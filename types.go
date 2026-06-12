@@ -230,13 +230,21 @@ const (
 // Domain types
 
 type (
+	// SeasonType is the structured season-type descriptor returned inside League.Season.
+	// ESPN returns this as an object with id, type, and abbreviation fields.
+	SeasonType struct {
+		ID           int    `json:"id"`
+		Type         string `json:"type"`
+		Abbreviation string `json:"abbreviation"`
+	}
+
 	// Season holds league-level season metadata returned inside a League.
 	Season struct {
-		StartDate   ESPNTime `json:"startDate"`
-		EndDate     ESPNTime `json:"endDate"`
-		DisplayName string   `json:"displayName"`
-		Year        int      `json:"year"`
-		Type        int      `json:"type"`
+		StartDate   ESPNTime   `json:"startDate"`
+		EndDate     ESPNTime   `json:"endDate"`
+		DisplayName string     `json:"displayName"`
+		Year        int        `json:"year"`
+		Type        SeasonType `json:"type"`
 	}
 
 	// EventSeason is the lightweight season descriptor attached to individual events.
