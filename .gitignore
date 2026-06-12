@@ -1,0 +1,8 @@
+# Claude Code
+.claude/
+
+# Internal docs
+docs/internal/
+
+# Test results
+test-results/

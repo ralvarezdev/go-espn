@@ -1,0 +1,83 @@
+version: '3'
+
+vars:
+  SCRIPT_DIR: ./scripts
+  TESTS_DIR: ./scripts/tests
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  # Quick test commands
+  test:
+    aliases: [t]
+    desc: Run all tests (full validation)
+    cmds:
+      - powershell ./run-test.ps1
+
+  test:quick:
+    aliases: [tq]
+    desc: Quick endpoint check (30 seconds)
+    cmds:
+      - powershell './run-test.ps1 -Tests 01-endpoints'
+
+  test:structure:
+    aliases: [ts]
+    desc: Validate response structure (3 minutes)
+    cmds:
+      - powershell './run-test.ps1 -Tests 02-scoreboard-structure,04-data-types'
+
+  test:endpoints:
+    desc: Test endpoints (8 tests)
+    cmds:
+      - powershell './run-test.ps1 -Tests 01-endpoints'
+
+  test:scoreboard:
+    desc: Test response structure (25+ tests)
+    cmds:
+      - powershell './run-test.ps1 -Tests 02-scoreboard-structure'
+
+  test:params:
+    desc: Test query parameters (4 tests)
+    cmds:
+      - powershell './run-test.ps1 -Tests 03-query-parameters'
+
+  test:types:
+    desc: Test data types (8 tests)
+    cmds:
+      - powershell './run-test.ps1 -Tests 04-data-types'
+
+  test:errors:
+    desc: Test error handling (6 tests)
+    cmds:
+      - powershell './run-test.ps1 -Tests 05-error-handling'
+
+  test:perf:
+    aliases: [tp]
+    desc: Test performance (5 tests)
+    cmds:
+      - powershell './run-test.ps1 -Tests 06-performance'
+
+  test:verbose:
+    aliases: [tv]
+    desc: Run all tests verbose
+    cmds:
+      - powershell './run-test.ps1 -Verbose'
+
+  # Utilities
+  help:
+    desc: Show all available commands
+    cmds:
+      - task --list
+
+  setup:
+    desc: Verify test suite is set up
+    cmds:
+      - powershell -NoProfile -Command "if (Test-Path '{{.SCRIPT_DIR}}/run-tests.ps1') { Write-Host '✅ Test suite ready' } else { Write-Host '❌ Test suite missing' }"
+
+  clean:
+    desc: Clean test results
+    cmds:
+      - powershell -NoProfile -Command "Remove-Item -Path './test-results' -Recurse -Force -ErrorAction SilentlyContinue; Write-Host '✅ Cleaned'"
