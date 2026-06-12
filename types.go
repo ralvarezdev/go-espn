@@ -233,7 +233,7 @@ type (
 	// SeasonType is the structured season-type descriptor returned inside League.Season.
 	// ESPN returns this as an object with id, type, and abbreviation fields.
 	SeasonType struct {
-		ID           int    `json:"id"`
+		ID           string `json:"id"`
 		Type         string `json:"type"`
 		Abbreviation string `json:"abbreviation"`
 	}
