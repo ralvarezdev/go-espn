@@ -81,3 +81,33 @@ tasks:
     desc: Clean test results
     cmds:
       - powershell -NoProfile -Command "Remove-Item -Path './test-results' -Recurse -Force -ErrorAction SilentlyContinue; Write-Host '✅ Cleaned'"
+
+  # Go development tasks
+  fmt:
+    desc: Format code with golangci-lint formatters (goimports + golines)
+    cmds:
+      - golangci-lint fmt ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  go:test:
+    desc: Run all Go tests with race detector
+    cmds:
+      - go test -race -count=1 ./...
+
+  tag:
+    desc: Tag and push a release — triggers CI (e.g. task tag VERSION=1.0.0)
+    requires:
+      vars: [VERSION]
+    vars:
+      TAG: v{{.VERSION}}
+    cmds:
+      - platforms: [windows]
+        cmd: pwsh -NoProfile -Command "if ('{{.VERSION}}' -notmatch '^\d+\.\d+\.\d+$') { Write-Error 'Invalid version {{.VERSION}} — expected X.Y.Z'; exit 1 }"
+      - platforms: [linux, darwin]
+        cmd: echo '{{.VERSION}}' | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "Invalid version {{.VERSION}} — expected X.Y.Z"; exit 1; }
+      - git tag {{.TAG}}
+      - git push origin {{.TAG}}
