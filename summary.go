@@ -4,7 +4,26 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"time"
+)
+
+// Form event enums
+
+type (
+	// AtVsType indicates whether a team played at home or away.
+	AtVsType string
+	// GameResultType is the outcome of a match for a team.
+	GameResultType string
+)
+
+const (
+	AtVsAt AtVsType = "at"
+	AtVsVs AtVsType = "vs"
+)
+
+const (
+	GameResultWin  GameResultType = "W"
+	GameResultLoss GameResultType = "L"
+	GameResultDraw GameResultType = "D"
 )
 
 type (
@@ -37,23 +56,23 @@ type (
 
 	// FormEvent is a single entry in a team's recent match history.
 	FormEvent struct {
-		Links              []Link    `json:"links"`
-		GameDate           time.Time `json:"gameDate"`
-		ID                 string    `json:"id"`
-		AtVs               string    `json:"atVs"` // "vs" or "at"
-		Score              string    `json:"score"`
-		HomeTeamID         string    `json:"homeTeamId"`
-		AwayTeamID         string    `json:"awayTeamId"`
-		HomeTeamScore      string    `json:"homeTeamScore"`
-		AwayTeamScore      string    `json:"awayTeamScore"`
-		HomeAggregateScore string    `json:"homeAggregateScore"`
-		AwayAggregateScore string    `json:"awayAggregateScore"`
-		HomeShootoutScore  string    `json:"homeShootoutScore"`
-		AwayShootoutScore  string    `json:"awayShootoutScore"`
-		GameResult         string    `json:"gameResult"` // "W", "L", "D"
-		CompetitionName    string    `json:"competitionName"`
-		LeagueName         string    `json:"leagueName"`
-		LeagueAbbreviation string    `json:"leagueAbbreviation"`
+		Links              []Link         `json:"links"`
+		GameDate           ESPNTime       `json:"gameDate"`
+		ID                 string         `json:"id"`
+		AtVs               AtVsType       `json:"atVs"`
+		Score              string         `json:"score"`
+		HomeTeamID         string         `json:"homeTeamId"`
+		AwayTeamID         string         `json:"awayTeamId"`
+		HomeTeamScore      string         `json:"homeTeamScore"`
+		AwayTeamScore      string         `json:"awayTeamScore"`
+		HomeAggregateScore string         `json:"homeAggregateScore"`
+		AwayAggregateScore string         `json:"awayAggregateScore"`
+		HomeShootoutScore  string         `json:"homeShootoutScore"`
+		AwayShootoutScore  string         `json:"awayShootoutScore"`
+		GameResult         GameResultType `json:"gameResult"`
+		CompetitionName    string         `json:"competitionName"`
+		LeagueName         string         `json:"leagueName"`
+		LeagueAbbreviation string         `json:"leagueAbbreviation"`
 	}
 
 	// Article is editorial content associated with a match.

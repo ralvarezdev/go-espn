@@ -2,10 +2,49 @@ package espn
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 )
 
-// ── Enum types ────────────────────────────────────────────────────────────────
+// Time handling
+
+// ESPNTime wraps time.Time to handle ESPN's non-standard timestamp format.
+//
+// ESPN returns timestamps without seconds (e.g. "2026-06-11T04:00Z"), which the
+// standard encoding/json cannot unmarshal into a time.Time because it requires
+// full RFC3339 with seconds. ESPNTime accepts both layouts on decode and, by
+// embedding time.Time, forwards all time.Time methods (UTC, Sub, Format, …) and
+// inherits its RFC3339 MarshalJSON, so call sites need no changes.
+type ESPNTime struct {
+	time.Time
+}
+
+// espnTimeLayouts are tried in order when decoding an ESPNTime. RFC3339 (with
+// seconds) is first because that is the canonical form; the seconds-less variant
+// is the shape ESPN actually emits.
+var espnTimeLayouts = []string{
+	time.RFC3339,
+	"2006-01-02T15:04Z07:00",
+}
+
+// UnmarshalJSON decodes an ESPN timestamp, tolerating the missing-seconds format.
+// A JSON null or empty string leaves the zero value in place.
+func (t *ESPNTime) UnmarshalJSON(b []byte) error {
+	s := strings.Trim(string(b), `"`)
+	if s == "" || s == "null" {
+		return nil
+	}
+	for _, layout := range espnTimeLayouts {
+		if parsed, err := time.Parse(layout, s); err == nil {
+			t.Time = parsed
+			return nil
+		}
+	}
+	return fmt.Errorf("espn: cannot parse time %q", s)
+}
+
+// Status and match state enums
 
 type (
 	// StatusState is the coarse lifecycle of a match.
@@ -131,6 +170,31 @@ const (
 	LinkRelHidden     LinkRelation = "hidden"
 )
 
+// Record types (team/competitor record classification).
+type (
+	RecordType string
+)
+
+const (
+	RecordTypeTotal      RecordType = "total"
+	RecordTypeHome       RecordType = "home"
+	RecordTypeAway       RecordType = "away"
+	RecordTypeConference RecordType = "conference"
+	RecordTypeDivision   RecordType = "division"
+)
+
+// Headline classification.
+type (
+	HeadlineType string
+)
+
+const (
+	HeadlineTypeRecap    HeadlineType = "Recap"
+	HeadlineTypePreview  HeadlineType = "Preview"
+	HeadlineTypeNews     HeadlineType = "News"
+	HeadlineTypeAnalysis HeadlineType = "Analysis"
+)
+
 // Sport path-segment constants for use in Scoreboard and Summary calls.
 const (
 	SportSoccer     = "soccer"
@@ -163,16 +227,16 @@ const (
 	PeriodShootout   = 5
 )
 
-// ── Domain types ──────────────────────────────────────────────────────────────
+// Domain types
 
 type (
 	// Season holds league-level season metadata returned inside a League.
 	Season struct {
-		StartDate   time.Time `json:"startDate"`
-		EndDate     time.Time `json:"endDate"`
-		DisplayName string    `json:"displayName"`
-		Year        int       `json:"year"`
-		Type        int       `json:"type"`
+		StartDate   ESPNTime `json:"startDate"`
+		EndDate     ESPNTime `json:"endDate"`
+		DisplayName string   `json:"displayName"`
+		Year        int      `json:"year"`
+		Type        int      `json:"type"`
 	}
 
 	// EventSeason is the lightweight season descriptor attached to individual events.
@@ -197,8 +261,8 @@ type (
 	// StartDate and EndDate are optional — some entries (e.g. future knockout rounds) omit them.
 	CalendarEntry struct {
 		Entries        []CalendarEntry `json:"entries"`
-		StartDate      *time.Time      `json:"startDate"`
-		EndDate        *time.Time      `json:"endDate"`
+		StartDate      *ESPNTime       `json:"startDate"`
+		EndDate        *ESPNTime       `json:"endDate"`
 		Label          string          `json:"label"`
 		Detail         string          `json:"detail"`
 		Value          string          `json:"value"`
@@ -207,12 +271,12 @@ type (
 
 	// Logo is a single league or team logo asset.
 	Logo struct {
-		Rel         []string   `json:"rel"` // e.g. ["full", "default"]
-		LastUpdated *time.Time `json:"lastUpdated"`
-		Href        string     `json:"href"`
-		Alt         string     `json:"alt"`
-		Width       int        `json:"width"`
-		Height      int        `json:"height"`
+		Rel         []string  `json:"rel"` // e.g. ["full", "default"]
+		LastUpdated *ESPNTime `json:"lastUpdated"`
+		Href        string    `json:"href"`
+		Alt         string    `json:"alt"`
+		Width       int       `json:"width"`
+		Height      int       `json:"height"`
 	}
 
 	// League carries metadata about a sport league returned alongside scoreboard events.
@@ -220,8 +284,8 @@ type (
 		Logos               []Logo          `json:"logos"`
 		Calendar            []CalendarEntry `json:"calendar"`
 		Season              Season          `json:"season"`
-		CalendarStartDate   time.Time       `json:"calendarStartDate"`
-		CalendarEndDate     time.Time       `json:"calendarEndDate"`
+		CalendarStartDate   ESPNTime        `json:"calendarStartDate"`
+		CalendarEndDate     ESPNTime        `json:"calendarEndDate"`
 		UID                 string          `json:"uid"`
 		ID                  string          `json:"id"`
 		Name                string          `json:"name"`
@@ -235,7 +299,7 @@ type (
 	// Event is a single match returned in the scoreboard.
 	Event struct {
 		Competitions []Competition `json:"competitions"`
-		Date         time.Time     `json:"date"`
+		Date         ESPNTime      `json:"date"`
 		Season       EventSeason   `json:"season"`
 		UID          string        `json:"uid"`
 		ID           string        `json:"id"` // numeric string; kept as string to avoid overflow
@@ -296,8 +360,8 @@ type (
 		Broadcasts    []Broadcast       `json:"broadcasts"`
 		GeoBroadcasts []json.RawMessage `json:"geoBroadcasts"`
 		Notes         []json.RawMessage `json:"notes"`
-		Date          time.Time         `json:"date"`
-		StartDate     time.Time         `json:"startDate"`
+		Date          ESPNTime          `json:"date"`
+		StartDate     ESPNTime          `json:"startDate"`
 		Status        Status            `json:"status"`
 		Format        Format            `json:"format"`
 		Venue         *Venue            `json:"venue"`
@@ -346,10 +410,10 @@ type (
 
 	// Record is a win-draw-loss summary string for a competitor.
 	Record struct {
-		Name         string `json:"name"`
-		Type         string `json:"type"`
-		Summary      string `json:"summary"` // e.g. "1-0-0" (W-D-L)
-		Abbreviation string `json:"abbreviation"`
+		Name         string     `json:"name"`
+		Type         RecordType `json:"type"`
+		Summary      string     `json:"summary"` // e.g. "1-0-0" (W-D-L)
+		Abbreviation string     `json:"abbreviation"`
 	}
 
 	// Statistic is a single named metric for a competitor.
@@ -413,9 +477,9 @@ type (
 
 	// Headline is a short editorial text associated with a competition.
 	Headline struct {
-		Description   string `json:"description"`
-		Type          string `json:"type"`
-		ShortLinkText string `json:"shortLinkText"`
+		Description   string       `json:"description"`
+		Type          HeadlineType `json:"type"`
+		ShortLinkText string       `json:"shortLinkText"`
 	}
 
 	// Link is a hyperlink with semantic relationship metadata.
